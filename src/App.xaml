@@ -219,6 +219,8 @@
 
     <!-- Menús oscuros -->
     <Style TargetType="{x:Type ContextMenu}">
+      <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+      <Setter Property="FontSize" Value="13"/>
       <Setter Property="Foreground" Value="{StaticResource Texto}"/>
       <Setter Property="OverridesDefaultStyle" Value="True"/>
       <Setter Property="HasDropShadow" Value="True"/>
@@ -238,6 +240,8 @@
       </Setter>
     </Style>
     <Style TargetType="{x:Type MenuItem}">
+      <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+      <Setter Property="FontSize" Value="13"/>
       <Setter Property="Foreground" Value="{StaticResource Texto}"/>
       <Setter Property="Template">
         <Setter.Value>
