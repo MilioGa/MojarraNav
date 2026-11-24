@@ -61,7 +61,7 @@ public partial class MainWindow : Window
         ConfigurarClaude();
 
         PreviewKeyDown += Atajos;
-        Loaded += async (_, _) => await Iniciar();
+        Loaded += async (_, _) => { AjustarMaximizada(); await Iniciar(); };
         Closing += (_, _) => AlCerrar();
     }
 
@@ -70,8 +70,9 @@ public partial class MainWindow : Window
     {
         try
         {
-            var opciones = new CoreWebView2EnvironmentOptions { Language = System.Globalization.CultureInfo.CurrentUICulture.Name };
-            opciones.CustomSchemeRegistrations.Add(new CoreWebView2CustomSchemeRegistration(Marca.Protocolo) { TreatAsSecure = true, HasAuthorityComponent = true });
+            // Las páginas internas moja:// se registran al crear el motor (la lista solo se puede pasar en el constructor)
+            var esquemas = new List<CoreWebView2CustomSchemeRegistration> { new(Marca.Protocolo) { TreatAsSecure = true, HasAuthorityComponent = true } };
+            var opciones = new CoreWebView2EnvironmentOptions(null, System.Globalization.CultureInfo.CurrentUICulture.Name, null, false, esquemas);
             var perfil = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Marca.Id, "Perfil");
             entorno = await CoreWebView2Environment.CreateAsync(null, perfil, opciones);
         }
@@ -168,7 +169,7 @@ public partial class MainWindow : Window
     void Aviso(string texto)
     {
         TxtAviso.Text = texto; PopAviso.IsOpen = false;
-        PopAviso.HorizontalOffset = (Raiz.ActualWidth - 200) / 2; PopAviso.VerticalOffset = 44;
+        PopAviso.HorizontalOffset = Math.Max(0, (Raiz.ActualWidth - 260) / 2); PopAviso.VerticalOffset = 92;
         PopAviso.IsOpen = true; temporizadorAviso.Stop(); temporizadorAviso.Start();
     }
 
@@ -177,7 +178,7 @@ public partial class MainWindow : Window
     {
         if (entorno == null) return null;
         url ??= datos.Ajustes.Inicio;
-        var wv = new WebView2 { Visibility = Visibility.Collapsed, DefaultBackgroundColor = System.Drawing.Color.White };
+        var wv = new WebView2 { Visibility = Visibility.Hidden, DefaultBackgroundColor = System.Drawing.Color.White };
         var t = new Pestana(wv) { Url = url };
         var ref_ = despuesDe ?? activa;
         var i = ref_ != null ? pestanas.IndexOf(ref_) + 1 : pestanas.Count;
@@ -212,7 +213,7 @@ public partial class MainWindow : Window
     {
         if (t == null) return;
         activa = t;
-        foreach (var p in pestanas) p.Vista.Visibility = p == t ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var p in pestanas) p.Vista.Visibility = p == t ? Visibility.Visible : Visibility.Hidden;
         PintarPestanas(); PintarBarra(); PintarPermiso();
         EnfocarActiva();
     }

@@ -145,7 +145,7 @@
       </Border>
     </Popup>
     <!-- Avisos breves -->
-    <Popup x:Name="PopAviso" PlacementTarget="{Binding ElementName=Raiz}" Placement="Top" AllowsTransparency="True" StaysOpen="True" Focusable="False" IsHitTestVisible="False">
+    <Popup x:Name="PopAviso" PlacementTarget="{Binding ElementName=Raiz}" Placement="Relative" AllowsTransparency="True" StaysOpen="True" Focusable="False" IsHitTestVisible="False">
       <Border Background="{StaticResource Panel3}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="9" Padding="14,8">
         <TextBlock x:Name="TxtAviso"/>
       </Border>
