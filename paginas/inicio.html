@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http: data:; style-src 'self' 'unsafe-inline'">
+<title>Nueva pestaña</title><link rel="stylesheet" href="pagina.css"><link rel="icon" href="data:,">
+<style>
+body{display:flex;flex-direction:column;min-height:100vh}
+.centro{flex:1;display:flex;flex-direction:column;align-items:center;padding:12vh 24px 40px}
+.logo{font-size:44px;font-weight:700;letter-spacing:-1px;margin:0 0 26px;background:linear-gradient(135deg,#a99dff,#7c6cff 45%,#d97757);-webkit-background-clip:text;background-clip:text;color:transparent}
+form{width:min(640px,100%);position:relative}
+form svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--dim)}
+#q{width:100%;height:52px;border-radius:99px;background:var(--panel);border:1px solid var(--line);padding:0 22px 0 50px;font-size:16px;outline:0;box-shadow:0 8px 30px #0005}
+#q:focus{border-color:var(--accent);box-shadow:0 0 0 4px #7c6cff33,0 8px 30px #0005}
+.cuadros{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px;width:min(720px,100%);margin-top:40px}
+.cuadro{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 8px;border-radius:14px;color:var(--text);text-decoration:none!important;transition:background .12s}
+.cuadro:hover{background:#ffffff0d}
+.cuadro .ico{width:48px;height:48px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.cuadro .ico img,.cuadro .ico .letra{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent2)}
+.cuadro span.n{font-size:12px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.claude{margin-top:46px;display:flex;align-items:center;gap:10px;color:var(--dim);font-size:13px;background:#ffffff08;border:1px solid var(--line);padding:10px 16px;border-radius:12px;max-width:640px}
+.claude svg{color:var(--claude)}
+kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;font-size:11px;font-family:inherit}
+</style></head><body>
+<div class="centro">
+  <h1 class="logo" id="nombre">MojarraNav</h1>
+  <form id="f"><span data-i="search"></span><input id="q" autofocus autocomplete="off" spellcheck="false" placeholder="Buscar en la web o escribir una dirección"></form>
+  <div class="cuadros" id="cuadros"></div>
+  <div class="claude" id="claude"><span data-i="sparkles"></span><span>Abre el panel de <b>Claude</b> (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>) y pídele que resuma, compare o busque por ti mientras navegas.</span></div>
+</div>
+<script src="iconos.js"></script><script src="pagina.js"></script>
+<script src="inicio.js"></script></body></html>

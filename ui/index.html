@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: http:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>MojarraNav</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="arriba">
+  <div id="tira" class="tira">
+    <div id="pestanas" class="pestanas" role="tablist" aria-label="Pestañas"></div>
+    <button class="icon-btn nueva" id="bNueva" data-i="plus" title="Pestaña nueva (Ctrl+T)" aria-label="Pestaña nueva"></button>
+  </div>
+  <div id="barra" class="barra">
+    <button class="icon-btn" id="bAtras" data-i="arrow-left" title="Atrás (Alt+←)" aria-label="Atrás"></button>
+    <button class="icon-btn" id="bAdelante" data-i="arrow-right" title="Adelante (Alt+→)" aria-label="Adelante"></button>
+    <button class="icon-btn" id="bRecargar" data-i="rotate-cw" title="Volver a cargar (F5)" aria-label="Volver a cargar"></button>
+    <button class="icon-btn" id="bInicio" data-i="house" title="Página de inicio (Alt+Inicio)" aria-label="Página de inicio"></button>
+    <div class="omni" id="omni">
+      <span class="omni-ico" id="omniIco" data-i="search"></span>
+      <input id="direccion" type="text" spellcheck="false" autocomplete="off" placeholder="Busca o escribe una dirección" aria-label="Barra de direcciones">
+      <span class="zoom hidden" id="zoomInd" title="Zoom (Ctrl+0 para restablecer)"></span>
+      <button class="icon-btn sm" id="bFav" data-i="star" title="Añadir a favoritos (Ctrl+D)" aria-label="Añadir a favoritos"></button>
+    </div>
+    <button class="icon-btn" id="bDescargas" data-i="download" title="Descargas (Ctrl+J)" aria-label="Descargas"><span class="badge hidden" id="nDesc"></span></button>
+    <button class="btn claude" id="bClaude" title="Panel de Claude (Ctrl+Shift+L)"><span data-i="sparkles"></span>Claude</button>
+    <button class="icon-btn" id="bMenu" data-i="ellipsis-vertical" title="Menú" aria-label="Menú"></button>
+  </div>
+  <div id="permiso" class="franja hidden" role="alert">
+    <span data-i="shield-check"></span><span id="permisoTxt"></span><div class="spacer"></div>
+    <button class="btn small" id="permNo">Bloquear</button><button class="btn small primary" id="permSi">Permitir</button>
+  </div>
+  <div id="busqueda" class="franja hidden">
+    <span data-i="search"></span>
+    <input id="busqTxt" type="text" placeholder="Buscar en la página" spellcheck="false" aria-label="Buscar en la página">
+    <span class="dim small" id="busqN"></span>
+    <button class="icon-btn sm" id="busqAnt" data-i="chevron-up" title="Anterior (Shift+Enter)" aria-label="Anterior"></button>
+    <button class="icon-btn sm" id="busqSig" data-i="chevron-down" title="Siguiente (Enter)" aria-label="Siguiente"></button>
+    <button class="icon-btn sm" id="busqX" data-i="x" title="Cerrar (Esc)" aria-label="Cerrar búsqueda"></button>
+  </div>
+</header>
+<main id="cuerpo">
+  <div id="vista" class="vista"></div>
+  <div id="divisor" class="divisor" title="Arrastra para cambiar el ancho"></div>
+  <aside id="claude" class="panel-claude" aria-label="Claude">
+    <div class="cl-head">
+      <span data-i="sparkles"></span><b>Claude</b><span class="dim small" id="clEstado"></span>
+      <div class="spacer"></div>
+      <button class="icon-btn sm" id="clNuevo" data-i="message-square-plus" title="Conversación nueva" aria-label="Conversación nueva"></button>
+      <button class="icon-btn sm" id="clCerrar" data-i="x" title="Ocultar (Ctrl+Shift+L)" aria-label="Ocultar panel"></button>
+    </div>
+    <div class="cl-log" id="clLog" role="log" aria-live="polite"></div>
+    <div class="cl-input" id="clInput">
+      <div class="cl-thumbs" id="clThumbs"></div>
+      <textarea id="clTexto" rows="3" placeholder="Pregunta sobre esta página o pídele algo… (Enter envía · Shift+Enter nueva línea)"></textarea>
+      <div class="cl-bar">
+        <label class="icon-btn sm" title="Adjuntar imagen" aria-label="Adjuntar imagen"><span data-i="paperclip"></span><input type="file" id="clArchivo" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden></label>
+        <button class="icon-btn sm" id="clCaptura" data-i="camera" title="Adjuntar captura de la página" aria-label="Adjuntar captura de la página"></button>
+        <select id="clModelo" title="Modelo" aria-label="Modelo"></select>
+        <select id="clEsfuerzo" title="Esfuerzo: más esfuerzo = respuestas más pensadas, pero más lentas" aria-label="Esfuerzo"></select>
+        <div class="spacer"></div>
+        <button class="btn small go" id="clEnviar">Enviar</button>
+      </div>
+    </div>
+  </aside>
+</main>
+<div id="sugerencias" class="pop hidden" role="listbox"></div>
+<div id="toast" class="toast hidden" role="status"></div>
+<script src="iconos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
