@@ -7,7 +7,7 @@
 **El navegador web de Mojarrium, con Claude navegando contigo.**
 Pregúntale por la página que estás viendo, pídele que busque, compare o abra pestañas por ti.
 
-![Versión](https://img.shields.io/badge/versión-0.2.0-7c6cff?style=flat-square)
+![Versión](https://img.shields.io/badge/versión-0.3.0-7c6cff?style=flat-square)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4?style=flat-square&logo=windows&logoColor=white)
 ![.NET](https://img.shields.io/badge/.NET_8-WPF-512bd4?style=flat-square&logo=dotnet&logoColor=white)
 ![Motor](https://img.shields.io/badge/motor-Edge_WebView2-0078d7?style=flat-square&logo=microsoftedge&logoColor=white)
@@ -23,9 +23,10 @@ Pregúntale por la página que estás viendo, pídele que busque, compare o abra
 
 ## ✨ Características
 
-- **Pestañas** con arrastrar para reordenar, clic central para cerrar, silenciar sitios y reabrir la última cerrada.
+- **Bloqueador de anuncios y rastreadores** con las listas de uBlock Origin y Brave (EasyList, EasyPrivacy, filtros de uBlock, Peter Lowe, EasyList en español): bloquea peticiones, oculta huecos de anuncios y quita los anuncios de YouTube. Se desactiva por sitio o del todo desde el escudo de la barra o `moja://ajustes`.
+- **Pestañas** con arrastrar (animado) para reordenar, clic central para cerrar, silenciar sitios y reabrir la última cerrada.
 - **Barra de direcciones inteligente**: escribe una dirección o una búsqueda; sugiere tus favoritos y lo más visitado.
-- **Favoritos, historial y descargas** en páginas propias (`moja://favoritos`, `moja://historial`, `moja://descargas`).
+- **Favoritos, historial y descargas** con lista rápida en la barra (botón "Mostrar más") y en páginas propias (`moja://favoritos`, `moja://historial`, `moja://descargas`).
 - **Buscar en la página**, zoom, imprimir, pantalla completa y herramientas de desarrollador (las de Edge).
 - **Permisos bajo control**: cámara, micrófono, ubicación o notificaciones siempre se preguntan.
 - **Páginas de error en español** que explican qué pasó.

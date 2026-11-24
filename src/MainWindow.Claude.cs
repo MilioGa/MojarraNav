@@ -32,7 +32,7 @@ public partial class MainWindow
         Direccion.GotKeyboardFocus += (_, _) => { Dispatcher.BeginInvoke(Direccion.SelectAll, DispatcherPriority.Input); Omni.BorderBrush = (Brush)FindResource("Acento"); MarcaAgua.Visibility = Visibility.Collapsed; };
         Direccion.PreviewMouseLeftButtonDown += (_, e) => { if (!Direccion.IsKeyboardFocusWithin) { Direccion.Focus(); e.Handled = true; } };
         Direccion.LostKeyboardFocus += (_, _) => { Omni.BorderBrush = (Brush)FindResource("Linea"); PopSug.IsOpen = false; PintarBarra(); };
-        Direccion.TextChanged += (_, _) => { if (Direccion.IsKeyboardFocused) Sugerir(); };
+        Direccion.TextChanged += (_, _) => { if (Direccion.IsKeyboardFocused) { MarcaAgua.Visibility = Visibility.Collapsed; Sugerir(); } };
         Direccion.PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter)
@@ -138,6 +138,7 @@ public partial class MainWindow
     void AlternarClaude() => MostrarClaude(ColClaude.ActualWidth < 1 || PanelClaude.Visibility != Visibility.Visible);
     void MostrarClaude(bool on, bool guardar = true)
     {
+        ColVistas.Width = new GridLength(1, GridUnitType.Star);
         PanelClaude.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         Divisor.Visibility = PanelClaude.Visibility;
         ColDivisor.Width = new GridLength(on ? 5 : 0);

@@ -17,6 +17,8 @@ public class Ajustes
     public string Modelo { get; set; } = "";
     public string Esfuerzo { get; set; } = "";
     public bool RestaurarPestanas { get; set; } = true;
+    public bool Bloqueador { get; set; } = true;
+    public List<string> SitiosSinBloqueo { get; set; } = new();
 }
 public class EntradaChat { public string R { get; set; } = ""; public string T { get; set; } = ""; public List<string>? Imgs { get; set; } }
 public class Chat { public string? Session { get; set; } public List<EntradaChat> Log { get; set; } = new(); }
@@ -87,6 +89,7 @@ public class Datos
             if (c["buscador"]?.GetValue<string>() is string b && Buscadores.ContainsKey(b)) Ajustes.Buscador = b;
             if (c["panelClaude"] is JsonValue p && p.TryGetValue(out bool pc)) Ajustes.PanelClaude = pc;
             if (c["restaurarPestanas"] is JsonValue r && r.TryGetValue(out bool rp)) Ajustes.RestaurarPestanas = rp;
+            if (c["bloqueador"] is JsonValue bl && bl.TryGetValue(out bool bb)) Ajustes.Bloqueador = bb;
             if (Num(c["anchoClaude"]) is double ac) Ajustes.AnchoClaude = Math.Clamp(ac, 280, 900);
             if (c["modelo"]?.GetValue<string>() is string m) Ajustes.Modelo = m;
             if (c["esfuerzo"]?.GetValue<string>() is string e) Ajustes.Esfuerzo = e;
@@ -96,6 +99,18 @@ public class Datos
     /// <summary>Número de un nodo JSON, venga de texto JSON o de código (int, double…).</summary>
     public static double? Num(JsonNode? n) => n is JsonValue && double.TryParse(n.ToJsonString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : null;
     public void GuardarAjustes() => Guardar("ajustes.json", () => Ajustes);
+    /// <summary>Activa o desactiva el bloqueador en un sitio. Devuelve si queda bloqueando.</summary>
+    public bool AlternarSitioSinBloqueo(string host)
+    {
+        bool bloquea;
+        lock (cerrojo)
+        {
+            var i = Ajustes.SitiosSinBloqueo.FindIndex(x => string.Equals(x, host, StringComparison.OrdinalIgnoreCase));
+            if (i >= 0) Ajustes.SitiosSinBloqueo.RemoveAt(i); else Ajustes.SitiosSinBloqueo.Add(host);
+            bloquea = i >= 0;
+        }
+        Guardar("ajustes.json", () => Ajustes); return bloquea;
+    }
 
     // ---------- Favoritos ----------
     public bool EsFavorito(string? url) { lock (cerrojo) return url != null && Favoritos.Any(f => f.Url == url); }

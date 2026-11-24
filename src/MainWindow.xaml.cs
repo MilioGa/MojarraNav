@@ -51,13 +51,13 @@ public partial class MainWindow : Window
         BRecargar.Click += (_, _) => { if (activa?.Core == null) return; if (activa.Cargando) activa.Core.Stop(); else activa.Core.Reload(); };
         BInicio.Click += (_, _) => Navegar(datos.Ajustes.Inicio);
         BFav.Click += (_, _) => AlternarFavorito();
-        BDescargas.Click += (_, _) => _ = NuevaPestana(Marca.Protocolo + "://descargas/");
         BMenu.Click += (_, _) => MenuPrincipal();
         BClaude.Click += (_, _) => AlternarClaude();
         IndZoom.MouseLeftButtonUp += (_, _) => Zoom(0);
         PermSi.Click += (_, _) => ResponderPermiso(true);
         PermNo.Click += (_, _) => ResponderPermiso(false);
         ConfigurarDireccion();
+        IniciarListas();
         ConfigurarClaude();
 
         PreviewKeyDown += Atajos;
@@ -84,6 +84,8 @@ public partial class MainWindow : Window
             Close(); return;
         }
         catch (Exception e) { Program.Registrar(e); MessageBox.Show(this, "No se pudo iniciar el motor del navegador:\n" + e.Message, Marca.Nombre); Close(); return; }
+
+        IniciarBloqueador();
 
         // Claude: puente local + servidor MCP (este mismo .exe con --mcp)
         puente = new Puente((n, a) => Dispatcher.InvokeAsync(() => Herramienta(n, a)).Task.Unwrap());
@@ -134,6 +136,11 @@ public partial class MainWindow : Window
             if (p.Length > 4 && p[4] == 1) WindowState = WindowState.Maximized;
         }
         catch { WindowState = WindowState.Maximized; }
+        // Que nunca quede más grande que la pantalla (al restaurar desde maximizada)
+        var area = SystemParameters.WorkArea;
+        Width = Math.Min(Width, area.Width); Height = Math.Min(Height, area.Height);
+        if (WindowStartupLocation == WindowStartupLocation.Manual)
+        { Left = Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - Width)); Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height)); }
     }
     void GuardarVentana()
     {
@@ -217,9 +224,10 @@ public partial class MainWindow : Window
         PintarPestanas(); PintarBarra(); PintarPermiso();
         EnfocarActiva();
     }
+    bool presionandoPestana;   // mientras se arrastra una pestaña no se da el foco a la página (le quitaría el ratón)
     void EnfocarActiva()
     {
-        if (activa == null) return;
+        if (activa == null || presionandoPestana) return;
         if (activa.Url.StartsWith(Marca.Inicio, StringComparison.OrdinalIgnoreCase)) Dispatcher.BeginInvoke(() => { Direccion.Focus(); Direccion.SelectAll(); }, DispatcherPriority.Input);
         else Dispatcher.BeginInvoke(() => activa?.Vista.Focus(), DispatcherPriority.Input);
     }
@@ -261,7 +269,12 @@ public partial class MainWindow : Window
         s.IsStatusBarEnabled = true; s.AreDevToolsEnabled = true; s.IsZoomControlEnabled = true; s.AreDefaultContextMenusEnabled = true;
         s.IsBuiltInErrorPageEnabled = false; s.IsPasswordAutosaveEnabled = true; s.IsGeneralAutofillEnabled = true; s.AreBrowserAcceleratorKeysEnabled = true;
         c.AddWebResourceRequestedFilter(Marca.Protocolo + "://*", CoreWebView2WebResourceContext.All);
-        c.WebResourceRequested += (_, e) => ServirInterna(e);
+        c.WebResourceRequested += (_, e) =>
+        {
+            if (e.Request.Uri.StartsWith(Marca.Protocolo + "://", StringComparison.OrdinalIgnoreCase)) ServirInterna(e);
+            else FiltrarPeticion(t, e);
+        };
+        EngancharBloqueador(t);
         c.WebMessageReceived += (_, e) => _ = MensajePagina(t, e);
         c.DocumentTitleChanged += (_, _) => { t.Titulo = string.IsNullOrWhiteSpace(c.DocumentTitle) ? t.Url : c.DocumentTitle; datos.Titular(t.Url, t.Titulo); PintarPestana(t); if (t == activa) Title = $"{t.Titulo} — {Marca.Nombre}"; };
         c.SourceChanged += (_, _) => { if (!t.Error || !c.Source.StartsWith(Marca.Protocolo + "://error")) t.Url = c.Source; if (t == activa) PintarBarra(); GuardarSesion(); };
@@ -354,17 +367,7 @@ public partial class MainWindow : Window
         System.Windows.Shell.WindowChrome.SetIsHitTestVisibleInChrome(b, true);
         b.MouseEnter += (_, _) => { if (t != activa) b.Background = (Brush)FindResource("Panel"); };
         b.MouseLeave += (_, _) => { if (t != activa) b.Background = Brushes.Transparent; };
-        Point? inicio = null; bool arrastrando = false;
-        b.MouseLeftButtonDown += (_, e) => { if (e.OriginalSource is DependencyObject d && EsBoton(d)) return; Activar(t); inicio = e.GetPosition(PanelPestanas); b.CaptureMouse(); e.Handled = true; };
-        b.MouseMove += (_, e) =>
-        {
-            if (inicio == null || e.LeftButton != MouseButtonState.Pressed) return;
-            var x = e.GetPosition(PanelPestanas).X;
-            if (!arrastrando && Math.Abs(x - inicio.Value.X) < 8) return;
-            arrastrando = true; b.Opacity = 0.7;
-            var ancho = b.ActualWidth + 2; MoverPestana(t, (int)Math.Floor(x / Math.Max(1, ancho)));
-        };
-        b.MouseLeftButtonUp += (_, _) => { inicio = null; arrastrando = false; b.Opacity = 1; b.ReleaseMouseCapture(); };
+        ArrastrarPestanas(t);
         b.MouseUp += (_, e) => { if (e.ChangedButton == MouseButton.Middle) CerrarPestana(t); };
         b.MouseRightButtonUp += (_, e) => { MenuPestana(t); e.Handled = true; };
         PanelPestanas.Children.Add(b);
@@ -418,7 +421,8 @@ public partial class MainWindow : Window
         BRecargar.ToolTip = a?.Cargando == true ? "Detener (Esc)" : "Volver a cargar (F5)";
         var url = a == null || a.Url.StartsWith(Marca.Inicio, StringComparison.OrdinalIgnoreCase) ? "" : a.Url;
         if (!Direccion.IsKeyboardFocused) Direccion.Text = MostrarUrl(url);
-        MarcaAgua.Visibility = Direccion.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        MarcaAgua.Visibility = Direccion.Text.Length == 0 && !Direccion.IsKeyboardFocused ? Visibility.Visible : Visibility.Collapsed;
+        PintarEscudo();
         var fav = url.Length > 0 && datos.EsFavorito(a!.Url);
         BFav.Content = fav ? "" : ""; BFav.Foreground = (Brush)FindResource(fav ? "Estrella" : "Texto");
         BFav.ToolTip = fav ? "Quitar de favoritos (Ctrl+D)" : "Añadir a favoritos (Ctrl+D)"; BFav.IsEnabled = url.Length > 0;

@@ -15,7 +15,7 @@
     <Product>MojarraNav</Product>
     <Company>Mojarrium</Company>
     <Description>Navegador web de Mojarrium con Claude integrado</Description>
-    <Version>0.2.2</Version>
+    <Version>0.3.0</Version>
     <ApplicationIcon>..\build\icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <NeutralLanguage>es</NeutralLanguage>

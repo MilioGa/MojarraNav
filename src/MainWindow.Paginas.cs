@@ -55,10 +55,11 @@ public partial class MainWindow
                 case "carpetaDescargas": AbrirExterno(CarpetaDescargas()); break;
                 case "ajustes":
                     var aj = J(datos.Ajustes)!.AsObject();
+                    aj["bloqEstado"] = bloqueador?.Estado;
                     aj["buscadores"] = new JsonObject(Datos.Buscadores.Select(b => KeyValuePair.Create(b.Key, (JsonNode?)b.Value.Nombre)));
                     r = aj; break;
                 case "setAjustes":
-                    if (a.Count > 0 && a[0] is JsonObject c) { datos.CambiarAjustes(c); if (c.ContainsKey("panelClaude")) MostrarClaude(datos.Ajustes.PanelClaude, false); }
+                    if (a.Count > 0 && a[0] is JsonObject c) { datos.CambiarAjustes(c); if (c.ContainsKey("panelClaude")) MostrarClaude(datos.Ajustes.PanelClaude, false); if (c.ContainsKey("bloqueador")) CambiarBloqueador(datos.Ajustes.Bloqueador); }
                     r = J(datos.Ajustes); break;
                 case "borrarDatos":
                     var que = a.Count > 0 ? a[0]?.ToJsonString() ?? "" : "";

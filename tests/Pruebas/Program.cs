@@ -56,6 +56,65 @@ using (var c = new System.IO.Pipes.NamedPipeClientStream(".", puente.Tubo, Syste
     var r = new StreamReader(c).ReadLine() ?? "";
     P("El puente rechaza un token falso", r.Contains("Prohibido"), r);
 }
+
+// ---------- Bloqueador de anuncios ----------
+var bl = new Bloqueador(Path.Combine(dir, "filtros"));
+P("Bloqueador: dominios básicos sin listas", bl.Bloquear("https://securepubads.g.doubleclick.net/tag/js/gpt.js", "https://elpais.com/"));
+bl.Compilar(new[] { """
+! comentario
+||anuncios.ejemplo^
+||rastreo.ejemplo^$third-party
+/banner/*/publicidad.
+||cdn.ejemplo/ads/*$script,domain=sitio.com
+@@||anuncios.ejemplo/permitido.js
+##.anuncio-generico
+sitio.com##.anuncio-sitio
+otro.com#@#.anuncio-generico
+sitio.com##div:has-text(Publicidad)
+""" });
+P("Bloquea dominio y subdominios", bl.Bloquear("https://x.anuncios.ejemplo/a.js", "https://sitio.com/"));
+P("Excepción @@ gana", !bl.Bloquear("https://anuncios.ejemplo/permitido.js", "https://sitio.com/"));
+P("$third-party: bloquea de terceros", bl.Bloquear("https://rastreo.ejemplo/p.gif", "https://sitio.com/"));
+P("$third-party: no en su propio sitio", !bl.Bloquear("https://rastreo.ejemplo/p.gif", "https://www.rastreo.ejemplo/"));
+P("Patrón con comodín", bl.Bloquear("https://foo.com/banner/300x250/publicidad.png", "https://sitio.com/"));
+P("$domain= solo en ese sitio", bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://sitio.com/") && !bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://otro.com/"));
+P("No bloquea lo normal", !bl.Bloquear("https://sitio.com/app.js", "https://sitio.com/"));
+P("CSS por sitio (sin procedurales)", bl.CssSitio("www.sitio.com").Contains(".anuncio-sitio") && !bl.CssSitio("sitio.com").Contains("has-text"));
+P("Script genérico con excepciones", bl.ScriptGenerico.Contains(".anuncio-generico") && bl.ScriptGenerico.Contains("otro.com"));
+bl.SitiosPermitidos.Add("sitio.com");
+P("Desactivado en un sitio", !bl.Bloquear("https://x.anuncios.ejemplo/a.js", "https://www.sitio.com/") && bl.CssSitio("sitio.com") == "");
+bl.SitiosPermitidos.Clear(); bl.Activo = false;
+P("Desactivado del todo", !bl.Bloquear("https://x.anuncios.ejemplo/a.js", "https://sitio.com/"));
+bl.Activo = true;
+P("Dominio registrable .com.mx", Bloqueador.Base("a.b.mercadolibre.com.mx") == "mercadolibre.com.mx" && Bloqueador.Base("x.y.google.com") == "google.com");
+var listasDir = Environment.GetEnvironmentVariable("MOJA_LISTAS");
+if (listasDir != null && Directory.Exists(listasDir))
+{
+    var sw = Stopwatch.StartNew();
+    var real = new Bloqueador(Path.Combine(dir, "f2"));
+    real.Compilar(Directory.GetFiles(listasDir, "*.txt").Select(File.ReadAllText));
+    var tc = sw.ElapsedMilliseconds; sw.Restart();
+    string[] anuncios = {
+        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", "https://www.googletagservices.com/tag/js/gpt.js",
+        "https://static.criteo.net/js/ld/publishertag.js", "https://cdn.taboola.com/libtrc/x/loader.js", "https://www.google-analytics.com/analytics.js",
+        "https://connect.facebook.net/en_US/fbevents.js", "https://c.amazon-adsystem.com/aax2/apstag.js", "https://sb.scorecardresearch.com/beacon.js",
+        "https://www.googletagmanager.com/gtag/js?id=G-XXXX", "https://ads.pubmatic.com/AdServer/js/pwt.js", "https://static.hotjar.com/c/hotjar-1.js",
+    };
+    string[] normales = {
+        "https://www.youtube.com/s/player/abc/base.js", "https://code.jquery.com/jquery-3.7.1.min.js", "https://fonts.googleapis.com/css2?family=Inter",
+        "https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js", "https://www.google.com/search?q=hola", "https://github.githubassets.com/assets/app.js",
+        "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg", "https://http2.mlstatic.com/frontend-assets/app.js",
+    };
+    var fallan = anuncios.Where(u => !real.Bloquear(u, "https://www.ejemplo-noticias.com/")).ToList();
+    var falsos = normales.Where(u => real.Bloquear(u, "https://www.ejemplo-noticias.com/")).ToList();
+    for (int k = 0; k < 2000; k++) foreach (var u in anuncios.Concat(normales)) real.Bloquear(u, "https://www.ejemplo-noticias.com/");
+    var porPeticion = sw.Elapsed.TotalMilliseconds * 1000 / (2000.0 * (anuncios.Length + normales.Length));
+    P($"Listas reales: {real.Reglas:N0} reglas en {tc} ms", real.Reglas > 50000);
+    P($"Bloquea anuncios/rastreadores conocidos ({anuncios.Length - fallan.Count}/{anuncios.Length})", fallan.Count == 0, string.Join(" ", fallan));
+    P("No bloquea recursos normales", falsos.Count == 0, string.Join(" ", falsos));
+    P($"Rápido: {porPeticion:0.0} µs por petición", porPeticion < 200);
+    P($"CSS genérico: {real.ScriptGenerico.Length / 1024} KB", real.ScriptGenerico.Length > 10000);
+}
 Directory.Delete(dir, true);
 var ok = res.Count(r => r.Item2);
 Console.WriteLine($"\nResultado: {ok}/{res.Count}");

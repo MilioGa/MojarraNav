@@ -17,6 +17,8 @@ public class Pestana
     public string Url { get; set; } = "";
     public ImageSource? Favicon { get; set; }
     public bool Cargando { get; set; }
+    public string Navegando { get; set; } = "";   // URL que se está abriendo (para no bloquearla)
+    public int Bloqueados { get; set; }             // anuncios/rastreadores bloqueados en la página actual
     public bool Error { get; set; }
     public Task Lista { get; set; } = Task.CompletedTask;
 

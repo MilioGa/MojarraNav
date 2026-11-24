@@ -217,6 +217,32 @@
       </Setter>
     </Style>
 
+    <!-- Interruptor (CheckBox) -->
+    <Style TargetType="{x:Type CheckBox}">
+      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type CheckBox}">
+            <DockPanel Background="Transparent" LastChildFill="True">
+              <Border x:Name="pista" DockPanel.Dock="Right" Width="36" Height="20" CornerRadius="10" Background="#2A2F3A" Margin="10,0,0,0" VerticalAlignment="Center">
+                <Ellipse x:Name="bola" Width="14" Height="14" Fill="#8F97A8" HorizontalAlignment="Left" Margin="3,0"/>
+              </Border>
+              <ContentPresenter VerticalAlignment="Center"/>
+            </DockPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="pista" Property="Background" Value="#7C6CFF"/>
+                <Setter TargetName="bola" Property="Fill" Value="White"/>
+                <Setter TargetName="bola" Property="HorizontalAlignment" Value="Right"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <!-- Menús oscuros -->
     <Style TargetType="{x:Type ContextMenu}">
       <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
