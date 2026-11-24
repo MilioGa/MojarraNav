@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pruebas de lo que no depende de Windows: datos, barra de direcciones y servidor MCP con su puente.
+       Ejecutar: dotnet run desde tests/Pruebas -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\Datos.cs;..\..\src\Puente.cs;..\..\src\Marca.cs" />
+  </ItemGroup>
+</Project>

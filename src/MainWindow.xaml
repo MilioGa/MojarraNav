@@ -1,0 +1,154 @@
+<Window x:Class="MojarraNav.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MojarraNav" Width="1400" Height="900" MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterScreen" Icon="pack://application:,,,/icon.png"
+        Background="{StaticResource Bg}" Foreground="{StaticResource Texto}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="40" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+
+  <Grid x:Name="Raiz">
+    <Grid.RowDefinitions>
+      <RowDefinition x:Name="FilaTira" Height="40"/>
+      <RowDefinition x:Name="FilaBarra" Height="44"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Tira de pestañas (también sirve para mover la ventana) -->
+    <Grid x:Name="Tira" Grid.Row="0" Background="{StaticResource Bg}">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel x:Name="ContTira" Orientation="Horizontal" Margin="8,6,40,0" VerticalAlignment="Bottom" ClipToBounds="True">
+        <StackPanel x:Name="PanelPestanas" Orientation="Horizontal"/>
+        <Button x:Name="BNueva" Style="{StaticResource BtnIcono}" Content="&#xE710;" Margin="4,0,0,2" ToolTip="Pestaña nueva (Ctrl+T)"
+                AutomationProperties.Name="Pestaña nueva" WindowChrome.IsHitTestVisibleInChrome="True"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+        <Button x:Name="BMin" Style="{StaticResource BtnVentana}" Content="&#xE921;" ToolTip="Minimizar" AutomationProperties.Name="Minimizar"/>
+        <Button x:Name="BMax" Style="{StaticResource BtnVentana}" Content="&#xE922;" ToolTip="Maximizar" AutomationProperties.Name="Maximizar"/>
+        <Button x:Name="BCerrarVentana" Style="{StaticResource BtnCerrarVentana}" Content="&#xE8BB;" ToolTip="Cerrar" AutomationProperties.Name="Cerrar"/>
+      </StackPanel>
+    </Grid>
+
+    <!-- Barra de herramientas y de direcciones -->
+    <Border x:Name="Barra" Grid.Row="1" Background="{StaticResource Panel2}" BorderBrush="{StaticResource Linea}" BorderThickness="0,0,0,1">
+      <DockPanel Margin="8,0" LastChildFill="True">
+        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="BAtras" Style="{StaticResource BtnIcono}" Content="&#xE72B;" ToolTip="Atrás (Alt+←)" AutomationProperties.Name="Atrás"/>
+          <Button x:Name="BAdelante" Style="{StaticResource BtnIcono}" Content="&#xE72A;" ToolTip="Adelante (Alt+→)" AutomationProperties.Name="Adelante"/>
+          <Button x:Name="BRecargar" Style="{StaticResource BtnIcono}" Content="&#xE72C;" ToolTip="Volver a cargar (F5)" AutomationProperties.Name="Volver a cargar"/>
+          <Button x:Name="BInicio" Style="{StaticResource BtnIcono}" Content="&#xE80F;" ToolTip="Página de inicio (Alt+Inicio)" AutomationProperties.Name="Página de inicio"/>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <Grid>
+            <Button x:Name="BDescargas" Style="{StaticResource BtnIcono}" Content="&#xE896;" ToolTip="Descargas (Ctrl+J)" AutomationProperties.Name="Descargas"/>
+            <Border x:Name="InsigniaDesc" Background="{StaticResource Acento}" CornerRadius="7" MinWidth="15" Height="15" Padding="4,0"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,1,0,0" IsHitTestVisible="False" Visibility="Collapsed">
+              <TextBlock x:Name="NumDesc" FontSize="10" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+          </Grid>
+          <Button x:Name="BClaude" Style="{StaticResource BtnClaude}" Margin="4,0" ToolTip="Panel de Claude (Ctrl+Shift+L)">
+            <StackPanel Orientation="Horizontal"><TextBlock Text="✦" Foreground="{StaticResource Claude}" Margin="0,0,6,0" FontSize="14"/><TextBlock Text="Claude"/></StackPanel>
+          </Button>
+          <Button x:Name="BMenu" Style="{StaticResource BtnIcono}" Content="&#xE712;" ToolTip="Menú (Alt+F)" AutomationProperties.Name="Menú"/>
+        </StackPanel>
+        <Border x:Name="Omni" Height="34" Margin="6,0" CornerRadius="17" Background="{StaticResource Bg}" BorderBrush="{StaticResource Linea}" BorderThickness="1" Padding="12,0,4,0">
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="IcoOmni" FontFamily="{StaticResource Iconos}" Text="&#xE721;" FontSize="13" Foreground="{StaticResource Tenue}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="Direccion" Grid.Column="1" Style="{StaticResource TextoLimpio}" FontSize="14" AutomationProperties.Name="Barra de direcciones"/>
+            <TextBlock x:Name="MarcaAgua" Grid.Column="1" Text="Busca o escribe una dirección" Foreground="{StaticResource Tenue}" FontSize="14" VerticalAlignment="Center" Margin="2,0,0,0" IsHitTestVisible="False"/>
+            <Border x:Name="IndZoom" Grid.Column="2" Background="{StaticResource Panel2}" CornerRadius="9" Padding="7,1" Margin="4,0" VerticalAlignment="Center" Visibility="Collapsed" Cursor="Hand" ToolTip="Zoom (clic o Ctrl+0 para restablecer)">
+              <TextBlock x:Name="TxtZoom" FontSize="11" Foreground="{StaticResource Tenue}"/>
+            </Border>
+            <Button x:Name="BFav" Grid.Column="3" Style="{StaticResource BtnIconoChico}" Content="&#xE734;" ToolTip="Añadir a favoritos (Ctrl+D)" AutomationProperties.Name="Favorito"/>
+          </Grid>
+        </Border>
+      </DockPanel>
+    </Border>
+
+    <!-- Franja de permisos (cámara, micrófono, ubicación…) -->
+    <Border x:Name="Permiso" Grid.Row="2" Background="#1A7C6CFF" BorderBrush="{StaticResource Linea}" BorderThickness="0,0,0,1" Padding="12,6" Visibility="Collapsed">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button x:Name="PermNo" Style="{StaticResource Btn}" Content="Bloquear" Margin="0,0,6,0"/>
+          <Button x:Name="PermSi" Style="{StaticResource BtnPrimario}" Content="Permitir"/>
+        </StackPanel>
+        <TextBlock FontFamily="{StaticResource Iconos}" Text="&#xE83D;" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource Acento2}"/>
+        <TextBlock x:Name="PermisoTxt" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+    </Border>
+
+    <!-- Página + panel de Claude -->
+    <Grid x:Name="Cuerpo" Grid.Row="3">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MinWidth="200"/>
+        <ColumnDefinition x:Name="ColDivisor" Width="5"/>
+        <ColumnDefinition x:Name="ColClaude" Width="380" MinWidth="0"/>
+      </Grid.ColumnDefinitions>
+      <Grid x:Name="Vistas" Background="White"/>
+      <GridSplitter x:Name="Divisor" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{StaticResource Linea}" ResizeBehavior="PreviousAndNext" ToolTip="Arrastra para cambiar el ancho"/>
+      <Border x:Name="PanelClaude" Grid.Column="2" Background="{StaticResource Panel}">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="40"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+          <Border BorderBrush="{StaticResource Linea}" BorderThickness="0,0,0,1">
+            <DockPanel Margin="12,0,6,0">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="ClNuevo" Style="{StaticResource BtnIconoChico}" Content="&#xE8BD;" ToolTip="Conversación nueva" AutomationProperties.Name="Conversación nueva"/>
+                <Button x:Name="ClCerrar" Style="{StaticResource BtnIconoChico}" Content="&#xE8BB;" ToolTip="Ocultar (Ctrl+Shift+L)" AutomationProperties.Name="Ocultar panel"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="✦" Foreground="{StaticResource Claude}" FontSize="15" Margin="0,0,8,0"/>
+                <TextBlock Text="Claude" FontWeight="SemiBold"/>
+                <TextBlock x:Name="ClEstado" Foreground="{StaticResource Tenue}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </DockPanel>
+          </Border>
+          <ScrollViewer x:Name="ClScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12">
+            <StackPanel x:Name="ClLog"/>
+          </ScrollViewer>
+          <Border Grid.Row="2" BorderBrush="{StaticResource Linea}" BorderThickness="0,1,0,0" Padding="8" AllowDrop="True" x:Name="ClEntrada">
+            <StackPanel>
+              <WrapPanel x:Name="ClMiniaturas" Margin="0,0,0,6" Visibility="Collapsed"/>
+              <Border Background="{StaticResource Panel2}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="8" Padding="8,6" x:Name="ClCaja">
+                <Grid>
+                  <TextBox x:Name="ClTexto" Style="{StaticResource TextoLimpio}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" MaxHeight="200"
+                           VerticalContentAlignment="Top" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Mensaje para Claude"/>
+                  <TextBlock x:Name="ClMarcaAgua" Text="Pregunta sobre esta página o pídele algo… (Enter envía · Shift+Enter nueva línea)" TextWrapping="Wrap"
+                             Foreground="{StaticResource Tenue}" IsHitTestVisible="False" Margin="2,0,0,0"/>
+                </Grid>
+              </Border>
+              <DockPanel Margin="0,6,0,0">
+                <Button x:Name="ClEnviar" DockPanel.Dock="Right" Style="{StaticResource Btn}" Padding="10,3" BorderBrush="{StaticResource Acento}" Background="#337C6CFF">
+                  <StackPanel Orientation="Horizontal"><TextBlock x:Name="ClEnviarIco" FontFamily="{StaticResource Iconos}" Text="&#xE724;" Margin="0,0,6,0" VerticalAlignment="Center"/><TextBlock x:Name="ClEnviarTxt" Text="Enviar"/></StackPanel>
+                </Button>
+                <StackPanel Orientation="Horizontal">
+                  <Button x:Name="ClAdjuntar" Style="{StaticResource BtnIconoChico}" Content="&#xE723;" ToolTip="Adjuntar imagen" AutomationProperties.Name="Adjuntar imagen"/>
+                  <Button x:Name="ClCaptura" Style="{StaticResource BtnIconoChico}" Content="&#xE722;" ToolTip="Adjuntar captura de la página" AutomationProperties.Name="Adjuntar captura de la página"/>
+                  <ComboBox x:Name="ClModelo" Width="112" Margin="4,0,0,0" ToolTip="Modelo"/>
+                  <ComboBox x:Name="ClEsfuerzo" Width="104" Margin="4,0,0,0" ToolTip="Esfuerzo: más esfuerzo = respuestas más pensadas, pero más lentas"/>
+                </StackPanel>
+              </DockPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Sugerencias de la barra de direcciones (ventana emergente: se dibuja encima de la página) -->
+    <Popup x:Name="PopSug" PlacementTarget="{Binding ElementName=Omni}" Placement="Bottom" VerticalOffset="4" AllowsTransparency="True" StaysOpen="True" Focusable="False">
+      <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="12" Padding="6" Width="{Binding ActualWidth, ElementName=Omni}">
+        <StackPanel x:Name="ListaSug"/>
+      </Border>
+    </Popup>
+    <!-- Avisos breves -->
+    <Popup x:Name="PopAviso" PlacementTarget="{Binding ElementName=Raiz}" Placement="Top" AllowsTransparency="True" StaysOpen="True" Focusable="False" IsHitTestVisible="False">
+      <Border Background="{StaticResource Panel3}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="9" Padding="14,8">
+        <TextBlock x:Name="TxtAviso"/>
+      </Border>
+    </Popup>
+  </Grid>
+</Window>

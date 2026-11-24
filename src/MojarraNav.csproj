@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <StartupObject>MojarraNav.Program</StartupObject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>MojarraNav</RootNamespace>
+    <AssemblyName>MojarraNav</AssemblyName>
+    <Product>MojarraNav</Product>
+    <Company>Mojarrium</Company>
+    <Description>Navegador web de Mojarrium con Claude integrado</Description>
+    <Version>0.2.0</Version>
+    <ApplicationIcon>..\build\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <NeutralLanguage>es</NeutralLanguage>
+    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <!-- Publicación: carpeta autónoma (no hace falta instalar .NET) precompilada para que abra rápido -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <DebugType>embedded</DebugType>
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Paginas\**\*" LogicalName="Paginas/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\CLAUDE.md" LogicalName="CLAUDE.md" />
+    <Resource Include="..\build\icon.png" Link="icon.png" />
+  </ItemGroup>
+</Project>
