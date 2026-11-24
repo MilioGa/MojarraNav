@@ -71,13 +71,17 @@ bl.Compilar(new[] { """
 sitio.com##.anuncio-sitio
 otro.com#@#.anuncio-generico
 sitio.com##div:has-text(Publicidad)
+||com^$doc,ipaddress=1.2.3.4
+||imgs.ejemplo^$~image
 """ });
+P("Opciones desconocidas no bloquean todo (||com^$ipaddress)", !bl.Bloquear("https://i.ytimg.com/vi/x/hqdefault.jpg", "https://www.youtube.com/", "image"));
+P("$~image respeta las imágenes", !bl.Bloquear("https://imgs.ejemplo/a.jpg", "https://sitio.com/", "image") && bl.Bloquear("https://imgs.ejemplo/a.js", "https://sitio.com/", "script"));
 P("Bloquea dominio y subdominios", bl.Bloquear("https://x.anuncios.ejemplo/a.js", "https://sitio.com/"));
 P("Excepción @@ gana", !bl.Bloquear("https://anuncios.ejemplo/permitido.js", "https://sitio.com/"));
 P("$third-party: bloquea de terceros", bl.Bloquear("https://rastreo.ejemplo/p.gif", "https://sitio.com/"));
 P("$third-party: no en su propio sitio", !bl.Bloquear("https://rastreo.ejemplo/p.gif", "https://www.rastreo.ejemplo/"));
 P("Patrón con comodín", bl.Bloquear("https://foo.com/banner/300x250/publicidad.png", "https://sitio.com/"));
-P("$domain= solo en ese sitio", bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://sitio.com/") && !bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://otro.com/"));
+P("$domain= solo en ese sitio", bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://sitio.com/", "script") && !bl.Bloquear("https://cdn.ejemplo/ads/a.js", "https://otro.com/", "script"));
 P("No bloquea lo normal", !bl.Bloquear("https://sitio.com/app.js", "https://sitio.com/"));
 P("CSS por sitio (sin procedurales)", bl.CssSitio("www.sitio.com").Contains(".anuncio-sitio") && !bl.CssSitio("sitio.com").Contains("has-text"));
 P("Script genérico con excepciones", bl.ScriptGenerico.Contains(".anuncio-generico") && bl.ScriptGenerico.Contains("otro.com"));
@@ -103,7 +107,7 @@ if (listasDir != null && Directory.Exists(listasDir))
     string[] normales = {
         "https://www.youtube.com/s/player/abc/base.js", "https://code.jquery.com/jquery-3.7.1.min.js", "https://fonts.googleapis.com/css2?family=Inter",
         "https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js", "https://www.google.com/search?q=hola", "https://github.githubassets.com/assets/app.js",
-        "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg", "https://http2.mlstatic.com/frontend-assets/app.js",
+        "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg", "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "https://pbs.twimg.com/media/abc.jpg", "https://m.media-amazon.com/images/I/71abc.jpg", "https://http2.mlstatic.com/frontend-assets/app.js",
     };
     var fallan = anuncios.Where(u => !real.Bloquear(u, "https://www.ejemplo-noticias.com/")).ToList();
     var falsos = normales.Where(u => real.Bloquear(u, "https://www.ejemplo-noticias.com/")).ToList();

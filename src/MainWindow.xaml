@@ -26,7 +26,7 @@
         <Button x:Name="BNueva" Style="{StaticResource BtnIcono}" Content="&#xE710;" Margin="4,0,0,2" ToolTip="Pestaña nueva (Ctrl+T)"
                 AutomationProperties.Name="Pestaña nueva" WindowChrome.IsHitTestVisibleInChrome="True"/>
       </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
+      <StackPanel x:Name="BotonesVentana" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top" WindowChrome.IsHitTestVisibleInChrome="True">
         <Button x:Name="BMin" Style="{StaticResource BtnVentana}" Content="&#xE921;" ToolTip="Minimizar" AutomationProperties.Name="Minimizar"/>
         <Button x:Name="BMax" Style="{StaticResource BtnVentana}" Content="&#xE922;" ToolTip="Maximizar" AutomationProperties.Name="Maximizar"/>
         <Button x:Name="BCerrarVentana" Style="{StaticResource BtnCerrarVentana}" Content="&#xE8BB;" ToolTip="Cerrar" AutomationProperties.Name="Cerrar"/>

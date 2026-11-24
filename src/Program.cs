@@ -63,7 +63,7 @@ public static class Program
                     s.WaitForConnection();
                     var texto = new StreamReader(s, Encoding.UTF8).ReadToEnd();
                     var urls = texto.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                    v.Dispatcher.BeginInvoke(() => v.AbrirDesdeOtraInstancia(urls));
+                    v.Dispatcher.BeginInvoke(() => (MainWindow.Ventanas.FirstOrDefault(x => !x.Privada) ?? v).AbrirDesdeOtraInstancia(urls));
                 }
                 catch { Thread.Sleep(500); }
             }

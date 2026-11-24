@@ -25,14 +25,25 @@ public partial class MainWindow : Window
     ClaudeChat? chat;
     readonly DispatcherTimer temporizadorAviso = new() { Interval = TimeSpan.FromSeconds(2.6) };
 
-    public MainWindow(string[] urls)
+    // Compartido entre todas las ventanas
+    static Datos? datosApp;
+    static CoreWebView2Environment? entornoApp;
+    public static readonly List<MainWindow> Ventanas = new();
+    /// <summary>Ventana de incógnito: no guarda historial, sesión ni cookies, y no tiene panel de Claude.</summary>
+    public bool Privada { get; }
+    readonly bool secundaria;
+
+    public MainWindow(string[] urls, bool privada = false)
     {
-        urlsIniciales = urls;
-        datos = new Datos(Program.DirDatos);
-        Recursos.CopiarClaudeMd(datos.Dir);
+        urlsIniciales = urls; Privada = privada; secundaria = Ventanas.Count > 0;
+        if (datosApp == null) { datosApp = new Datos(Program.DirDatos); Recursos.CopiarClaudeMd(datosApp.Dir); }
+        datos = datosApp;
+        Ventanas.Add(this); Closed += (_, _) => Ventanas.Remove(this);
         InitializeComponent();
         Title = Marca.Nombre;
         RestaurarVentana();
+        if (secundaria && WindowStartupLocation == WindowStartupLocation.Manual) { Left += 30; Top += 30; WindowState = WindowState.Normal; }
+        if (privada) PrepararIncognito();
 
         // Ventana
         BMin.Click += (_, _) => WindowState = WindowState.Minimized;
@@ -58,7 +69,7 @@ public partial class MainWindow : Window
         PermNo.Click += (_, _) => ResponderPermiso(false);
         ConfigurarDireccion();
         IniciarListas();
-        ConfigurarClaude();
+        if (!privada) ConfigurarClaude();
 
         PreviewKeyDown += Atajos;
         Loaded += async (_, _) => { AjustarMaximizada(); await Iniciar(); };
@@ -74,7 +85,8 @@ public partial class MainWindow : Window
             var esquemas = new List<CoreWebView2CustomSchemeRegistration> { new(Marca.Protocolo) { TreatAsSecure = true, HasAuthorityComponent = true } };
             var opciones = new CoreWebView2EnvironmentOptions(null, System.Globalization.CultureInfo.CurrentUICulture.Name, null, false, esquemas);
             var perfil = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Marca.Id, "Perfil");
-            entorno = await CoreWebView2Environment.CreateAsync(null, perfil, opciones);
+            entornoApp ??= await CoreWebView2Environment.CreateAsync(null, perfil, opciones);
+            entorno = entornoApp;
         }
         catch (WebView2RuntimeNotFoundException)
         {
@@ -87,13 +99,14 @@ public partial class MainWindow : Window
 
         IniciarBloqueador();
 
+        if (Privada) { _ = NuevaPestana(urlsIniciales.Length > 0 ? datos.AUrl(urlsIniciales[0]) : null); return; }
         // Claude: puente local + servidor MCP (este mismo .exe con --mcp)
         puente = new Puente((n, a) => Dispatcher.InvokeAsync(() => Herramienta(n, a)).Task.Unwrap());
         var exe = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, Marca.Id + ".exe");
         chat = new ClaudeChat(datos.Dir, exe, puente.Tubo, puente.Token, Contexto, ev => Dispatcher.BeginInvoke(() => EventoChat(ev)));
 
         // Pestañas iniciales: las de la última vez y las que vengan al abrir un enlace
-        var previas = datos.Ajustes.RestaurarPestanas ? datos.Sesion.Where(u => !string.IsNullOrWhiteSpace(u)).Take(30).ToList() : new();
+        var previas = datos.Ajustes.RestaurarPestanas && !secundaria ? datos.Sesion.Where(u => !string.IsNullOrWhiteSpace(u)).Take(30).ToList() : new();
         for (int i = 0; i < previas.Count; i++) _ = NuevaPestana(previas[i], activar: i == 0);
         foreach (var u in urlsIniciales) _ = NuevaPestana(datos.AUrl(u) ?? u);
         if (pestanas.Count == 0) _ = NuevaPestana();
@@ -109,7 +122,8 @@ public partial class MainWindow : Window
 
     void AlCerrar()
     {
-        GuardarSesion();
+        if (Privada) return;
+        if (!secundaria) GuardarSesion();
         datos.Ajustes.AnchoClaude = ColClaude.ActualWidth > 0 ? ColClaude.ActualWidth : datos.Ajustes.AnchoClaude;
         datos.GuardarAjustes();
         GuardarVentana();
@@ -197,7 +211,12 @@ public partial class MainWindow : Window
         t.Lista = lista.Task;
         try
         {
-            await wv.EnsureCoreWebView2Async(entorno);
+            if (Privada)
+            {
+                var o = entorno.CreateCoreWebView2ControllerOptions(); o.IsInPrivateModeEnabled = true; o.ProfileName = "incognito";
+                await wv.EnsureCoreWebView2Async(entorno, o);
+            }
+            else await wv.EnsureCoreWebView2Async(entorno);
             Enganchar(t);
             if (ventanaNueva != null) { ventanaNueva.NewWindow = wv.CoreWebView2; ventanaNueva.Handled = true; }
             else Cargar(t, url);
@@ -260,7 +279,7 @@ public partial class MainWindow : Window
         Cargar(activa, url); activa.Vista.Focus(); return activa;
     }
 
-    void GuardarSesion() => datos.GuardarSesion(pestanas.Select(p => p.Url).Where(u => u.Length > 0 && !u.StartsWith("data:") && !u.StartsWith(Marca.Protocolo + "://error")).ToList());
+    void GuardarSesion() { if (!Privada && !secundaria) datos.GuardarSesion(pestanas.Select(p => p.Url).Where(u => u.Length > 0 && !u.StartsWith("data:") && !u.StartsWith(Marca.Protocolo + "://error")).ToList()); }
 
     void Enganchar(Pestana t)
     {
@@ -276,7 +295,7 @@ public partial class MainWindow : Window
         };
         EngancharBloqueador(t);
         c.WebMessageReceived += (_, e) => _ = MensajePagina(t, e);
-        c.DocumentTitleChanged += (_, _) => { t.Titulo = string.IsNullOrWhiteSpace(c.DocumentTitle) ? t.Url : c.DocumentTitle; datos.Titular(t.Url, t.Titulo); PintarPestana(t); if (t == activa) Title = $"{t.Titulo} — {Marca.Nombre}"; };
+        c.DocumentTitleChanged += (_, _) => { t.Titulo = string.IsNullOrWhiteSpace(c.DocumentTitle) ? t.Url : c.DocumentTitle; if (!Privada) datos.Titular(t.Url, t.Titulo); PintarPestana(t); if (t == activa) Title = $"{t.Titulo} — {Marca.Nombre}"; };
         c.SourceChanged += (_, _) => { if (!t.Error || !c.Source.StartsWith(Marca.Protocolo + "://error")) t.Url = c.Source; if (t == activa) PintarBarra(); GuardarSesion(); };
         c.HistoryChanged += (_, _) => { if (t == activa) PintarBarra(); };
         c.NavigationStarting += (_, e) =>
@@ -296,7 +315,7 @@ public partial class MainWindow : Window
                 t.Url = fallida; t.Titulo = "No se pudo abrir la página";
                 c.Navigate($"{Marca.Protocolo}://error/?u={Uri.EscapeDataString(fallida)}&c={e.WebErrorStatus}");
             }
-            else if (e.IsSuccess && !t.Error) datos.Visitar(c.Source, c.DocumentTitle);
+            else if (e.IsSuccess && !t.Error && !Privada) datos.Visitar(c.Source, c.DocumentTitle);
             PintarPestana(t); if (t == activa) PintarBarra();
         };
         c.FaviconChanged += async (_, _) =>
@@ -471,7 +490,9 @@ public partial class MainWindow : Window
         if (ctrl && k == Key.Tab || ctrl && (k == Key.PageDown || k == Key.PageUp))
         { H(() => { var n = pestanas.Count; var j = pestanas.IndexOf(activa!); Activar(pestanas[(j + ((shift && k == Key.Tab) || k == Key.PageUp ? n - 1 : 1)) % n]); }); return; }
         if (ctrl && k >= Key.D1 && k <= Key.D9) { H(() => Activar(k == Key.D9 ? pestanas.Last() : pestanas.ElementAtOrDefault(k - Key.D1))); return; }
-        if (ctrl && k == Key.L || k == Key.F6 || alt && k == Key.D) { H(() => { Direccion.Focus(); Direccion.SelectAll(); }); return; }
+        if (ctrl && !shift && k == Key.N) { H(() => NuevaVentana(false)); return; }
+        if (ctrl && shift && k == Key.N) { H(() => NuevaVentana(true)); return; }
+        if (ctrl && !shift && k == Key.L || k == Key.F6 || alt && k == Key.D) { H(() => { Direccion.Focus(); Direccion.SelectAll(); }); return; }
         if (ctrl && (k == Key.E || k == Key.K)) { H(() => { Direccion.Focus(); Direccion.Text = ""; }); return; }
         if (alt && k == Key.Home) { H(() => Navegar(datos.Ajustes.Inicio)); return; }
         if (alt && k == Key.F) { H(MenuPrincipal); return; }
@@ -481,7 +502,7 @@ public partial class MainWindow : Window
         if (ctrl && !shift && k == Key.H) { H(() => _ = NuevaPestana(Marca.Protocolo + "://historial/")); return; }
         if (ctrl && !shift && k == Key.J) { H(() => _ = NuevaPestana(Marca.Protocolo + "://descargas/")); return; }
         if (ctrl && shift && k == Key.O) { H(() => _ = NuevaPestana(Marca.Protocolo + "://favoritos/")); return; }
-        if (ctrl && shift && k == Key.L) { H(() => AlternarClaude()); return; }
+        if (ctrl && shift && k == Key.L) { H(() => { if (!Privada) AlternarClaude(); }); return; }
         if (k == Key.F11) { H(() => PantallaCompleta(!pantallaCompleta)); return; }
         if (k == Key.Escape && pantallaCompleta && activa?.Core?.ContainsFullScreenElement != true) { H(() => PantallaCompleta(false)); return; }
         // Con el foco en la interfaz (no en la página) se reenvían algunos atajos del navegador
@@ -524,6 +545,8 @@ public partial class MainWindow : Window
             Items =
             {
                 Item("Pestaña nueva", () => _ = NuevaPestana(), "Ctrl+T", ""),
+                Item("Ventana nueva", () => NuevaVentana(false), "Ctrl+N", ""),
+                Item("Ventana de incógnito", () => NuevaVentana(true), "Ctrl+Shift+N", ""),
                 Item("Reabrir pestaña cerrada", () => { if (cerradas.Count > 0) _ = NuevaPestana(cerradas.Pop()); }, "Ctrl+Shift+T", "", cerradas.Count > 0),
                 new Separator(),
                 Item("Historial", () => _ = NuevaPestana(Marca.Protocolo + "://historial/"), "Ctrl+H", ""),
@@ -572,14 +595,14 @@ public partial class MainWindow : Window
         var obj = e.ContextMenuTarget; var lista = e.MenuItems;
         CoreWebView2ContextMenuItem Nuevo(string texto, Action a) { var it = entorno.CreateContextMenuItem(texto, null, CoreWebView2ContextMenuItemKind.Command); it.CustomItemSelected += (_, _) => Dispatcher.BeginInvoke(a); return it; }
         var sep = entorno.CreateContextMenuItem("", null, CoreWebView2ContextMenuItemKind.Separator);
-        if (obj.HasSelection && !obj.IsEditable && !string.IsNullOrWhiteSpace(obj.SelectionText))
+        if (!Privada && obj.HasSelection && !obj.IsEditable && !string.IsNullOrWhiteSpace(obj.SelectionText))
         {
             var s = obj.SelectionText.Trim();
             lista.Insert(0, sep);
             lista.Insert(0, Nuevo("Traducir con Claude", () => EnviarAClaude($"Traduce al español (o al inglés si ya está en español):\n\n{s}")));
             lista.Insert(0, Nuevo("✦ Preguntar a Claude sobre esto", () => PrepararPregunta(s)));
         }
-        else if (obj.Kind == CoreWebView2ContextMenuTargetKind.Page && !obj.HasLinkUri && !obj.IsEditable)
+        else if (!Privada && obj.Kind == CoreWebView2ContextMenuTargetKind.Page && !obj.HasLinkUri && !obj.IsEditable)
         {
             lista.Add(sep);
             lista.Add(Nuevo("✦ Resumir esta página con Claude", () => EnviarAClaude("Resume la página que estoy viendo.")));
@@ -587,6 +610,8 @@ public partial class MainWindow : Window
         if (obj.HasLinkUri)
         {
             var enlace = obj.LinkUri;
+            if (!Privada) lista.Insert(0, Nuevo("Abrir enlace en una ventana de incógnito", () => NuevaVentana(true, enlace)));
+            lista.Insert(0, Nuevo("Abrir enlace en una ventana nueva", () => NuevaVentana(Privada, enlace)));
             lista.Insert(0, Nuevo("Abrir enlace en una pestaña nueva", () => _ = NuevaPestana(enlace, false, t)));
         }
     }

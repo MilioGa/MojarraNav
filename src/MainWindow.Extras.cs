@@ -11,16 +11,52 @@ namespace MojarraNav;
 // Bloqueador de anuncios, listas rápidas (descargas, historial, favoritos) y animación de pestañas
 public partial class MainWindow
 {
+    static Bloqueador? bloqueadorApp;
     Bloqueador? bloqueador;
+
+    // ===================== Ventanas nuevas e incógnito =====================
+    void NuevaVentana(bool privada, string? url = null)
+    {
+        var v = new MainWindow(url != null ? new[] { url } : Array.Empty<string>(), privada);
+        v.Show(); v.Activate();
+    }
+
+    void PrepararIncognito()
+    {
+        var oscuro = new SolidColorBrush(Color.FromRgb(0x1A, 0x14, 0x2E));
+        Tira.Background = oscuro; Background = oscuro;
+        Barra.Background = new SolidColorBrush(Color.FromRgb(0x22, 0x1B, 0x3A));
+        BClaude.Visibility = Visibility.Collapsed;
+        PanelClaude.Visibility = Visibility.Collapsed; Divisor.Visibility = Visibility.Collapsed;
+        ColDivisor.Width = new GridLength(0); ColClaude.Width = new GridLength(0); ColClaude.MinWidth = 0;
+        BHistorial.Visibility = Visibility.Collapsed;
+        // Distintivo "Incógnito" junto a los botones de la ventana
+        var marca = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(0x40, 0x7C, 0x6C, 0xFF)), CornerRadius = new CornerRadius(10), Padding = new Thickness(10, 3, 10, 3),
+            Margin = new Thickness(0, 8, 8, 0), VerticalAlignment = VerticalAlignment.Top, ToolTip = "No se guardan el historial, las cookies ni lo que escribas en formularios al cerrar esta ventana",
+        };
+        var sp = new StackPanel { Orientation = Orientation.Horizontal };
+        sp.Children.Add(new TextBlock { Text = "\uED1A", FontFamily = (FontFamily)FindResource("Iconos"), Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center });
+        sp.Children.Add(new TextBlock { Text = "Incógnito", FontWeight = FontWeights.SemiBold });
+        marca.Child = sp;
+        BotonesVentana.Children.Insert(0, marca);
+    }
 
     // ===================== Bloqueador =====================
     void IniciarBloqueador()
     {
-        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Marca.Id, "Filtros");
-        bloqueador = new Bloqueador(dir) { Activo = datos.Ajustes.Bloqueador };
-        foreach (var s in datos.Ajustes.SitiosSinBloqueo) bloqueador.SitiosPermitidos.Add(s);
+        var nuevo = bloqueadorApp == null;
+        if (nuevo)
+        {
+            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Marca.Id, "Filtros");
+            bloqueadorApp = new Bloqueador(dir) { Activo = datos.Ajustes.Bloqueador };
+            foreach (var s in datos.Ajustes.SitiosSinBloqueo) bloqueadorApp.SitiosPermitidos.Add(s);
+        }
+        bloqueador = bloqueadorApp!;
         bloqueador.Cambio += () => Dispatcher.BeginInvoke(() => { PintarEscudo(); ActualizarScriptsBloqueo(); });
-        _ = bloqueador.IniciarAsync();
+        Closed += (_, _) => { };
+        if (nuevo) _ = bloqueador.IniciarAsync();
 
         BEscudo.Click += (_, _) => { PintarEscudo(); PopEscudo.IsOpen = true; };
         EscSitio.Click += (_, _) =>
@@ -55,7 +91,7 @@ public partial class MainWindow
         c.FrameNavigationStarting += (_, e) =>
         {
             // iframes de anuncios
-            if (bloqueador != null && bloqueador.Bloquear(e.Uri, t.Url)) { e.Cancel = true; t.Bloqueados++; if (t == activa) PintarEscudo(); }
+            if (bloqueador != null && bloqueador.Bloquear(e.Uri, t.Url, "subdocument")) { e.Cancel = true; t.Bloqueados++; if (t == activa) PintarEscudo(); }
         };
         c.ContentLoading += async (_, _) =>
         {
@@ -75,7 +111,14 @@ public partial class MainWindow
         // La página principal nunca se bloquea (ni la que se está abriendo)
         if (e.ResourceContext == CoreWebView2WebResourceContext.Document && (uri == t.Navegando || uri == t.Url)) return;
         var pagina = t.Url.StartsWith("http") ? t.Url : t.Navegando;
-        if (!bloqueador.Bloquear(uri, pagina)) return;
+        var tipo = e.ResourceContext switch
+        {
+            CoreWebView2WebResourceContext.Image => "image", CoreWebView2WebResourceContext.Script => "script",
+            CoreWebView2WebResourceContext.Stylesheet => "stylesheet", CoreWebView2WebResourceContext.XmlHttpRequest or CoreWebView2WebResourceContext.Fetch => "xhr",
+            CoreWebView2WebResourceContext.Document => "subdocument", CoreWebView2WebResourceContext.Media => "media", CoreWebView2WebResourceContext.Font => "font",
+            CoreWebView2WebResourceContext.Websocket => "websocket", CoreWebView2WebResourceContext.Ping => "ping", _ => "other",
+        };
+        if (!bloqueador.Bloquear(uri, pagina, tipo)) return;
         e.Response = entorno!.CreateWebResourceResponse(null, 403, "Bloqueado", "");
         t.Bloqueados++;
         if (t == activa) PintarEscudoDiferido();

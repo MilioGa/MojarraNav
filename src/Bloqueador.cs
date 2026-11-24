@@ -38,8 +38,9 @@ public class Bloqueador
     // ---- reglas compiladas ----
     class Regla
     {
-        public string Patron = "";      // en minúsculas, con * y ^
+        public string Patron = "", Texto = "";      // en minúsculas, con * y ^
         public bool AnclaHost, AnclaInicio, AnclaFin, SoloTerceros, SoloPropios;
+        public HashSet<string>? Tipos, NoTipos;   // script, image, stylesheet…
         public string[]? Dominios, NoDominios;   // $domain=
     }
     class Conjunto
@@ -154,7 +155,7 @@ public class Bloqueador
         string patron = l, opciones = "";
         var dolar = l.LastIndexOf('$');
         if (dolar > 0 && !l[(dolar + 1)..].Contains('/')) { patron = l[..dolar]; opciones = l[(dolar + 1)..].ToLowerInvariant(); }
-        var r = new Regla();
+        var r = new Regla { Texto = l };
         foreach (var o in opciones.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             if (o is "third-party" or "3p") r.SoloTerceros = true;
@@ -165,22 +166,29 @@ public class Bloqueador
                 r.Dominios = ds.Where(d => !d.StartsWith('~')).ToArray(); if (r.Dominios.Length == 0) r.Dominios = null;
                 r.NoDominios = ds.Where(d => d.StartsWith('~')).Select(d => d[1..]).ToArray();
             }
-            else if (o is "badfilter" or "popup" or "csp" || o.StartsWith("csp=") || o.StartsWith("redirect-rule") || o.StartsWith("removeparam") || o.StartsWith("removeheader") || o.StartsWith("replace=") || o.StartsWith("header=") || o.StartsWith("permissions=") || o.StartsWith("urlskip=") || o.StartsWith("uritransform=")) return false;
+            else if (excepcion && o is "document" or "doc")
+            {
+                var h = HostDe(patron); if (h != null && Regex1(patron)) n.SitiosExcepcion.Add(h); return true;
+            }
+            else if (Tipo(o.TrimStart('~')) is string tp)
+            {
+                if (o.StartsWith('~')) (r.NoTipos ??= new()).Add(tp); else (r.Tipos ??= new()).Add(tp);
+            }
+            else if (o is "important" or "match-case" or "all" or "strict3p" or "strict1p") { }
             else if (excepcion && (o is "generichide" or "ghide" or "elemhide" or "ehide"))
             {
                 var h = HostDe(patron); if (h != null) n.SinGenerico.Add(h); return true;
             }
-            else if (excepcion && o is "document" or "doc" or "all")
-            {
-                var h = HostDe(patron); if (h != null && Regex1(patron)) n.SitiosExcepcion.Add(h); return true;
-            }
+            else return false;   // opción desconocida (ipaddress=, redirect=, csp=, popup, document…): mejor no aplicar la regla
         }
+        if (r.Tipos != null && r.Tipos.Remove("document") && r.Tipos.Count == 0) return false;   // bloqueo de páginas enteras: no se usa
         patron = patron.ToLowerInvariant();
+        if (patron.StartsWith("||") && HostDe(patron) == null && !patron[2..].Contains('/')) return false;   // "||com^" y similares: demasiado amplio
         if (patron.Length == 0 || patron == "*" || patron == "|" || patron == "||") return false;
 
         // Atajo: "||host^" sin más = dominio completo
         var soloHost = HostDe(patron);
-        if (soloHost != null && Regex1(patron) && r.Dominios == null && (r.NoDominios == null || r.NoDominios.Length == 0) && !r.SoloPropios)
+        if (soloHost != null && Regex1(patron) && r.Dominios == null && (r.NoDominios == null || r.NoDominios.Length == 0) && !r.SoloPropios && r.Tipos == null && r.NoTipos == null)
         {
             if (excepcion) n.Permitidos.Add(soloHost);
             else if (r.SoloTerceros) n.HostsTerceros.Add(soloHost);
@@ -227,7 +235,15 @@ public class Bloqueador
 
     // ===================== Consultas =====================
     /// <summary>¿Bloquear esta petición? pagina = URL de la pestaña (para saber si es de terceros).</summary>
-    public bool Bloquear(string url, string pagina)
+    static string? Tipo(string o) => o switch
+    {
+        "script" => "script", "image" => "image", "stylesheet" or "css" => "stylesheet", "xmlhttprequest" or "xhr" => "xhr",
+        "subdocument" or "frame" => "subdocument", "media" => "media", "font" => "font", "websocket" => "websocket",
+        "ping" or "beacon" => "ping", "object" or "object-subrequest" => "object", "other" => "other", "document" or "doc" => "document",
+        _ => null,
+    };
+
+    public bool Bloquear(string url, string pagina, string tipo = "other")
     {
         if (!Activo) return false;
         if (!Uri.TryCreate(url, UriKind.Absolute, out var u) || (u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "ws" && u.Scheme != "wss")) return false;
@@ -244,15 +260,24 @@ public class Bloqueador
         if (!bloq)
             foreach (var t in Tokens(lurl))
             {
-                if (n.PorToken.TryGetValue(t, out var lista) && lista.Any(r => Coincide(r, lurl, host, hostPag, terceros))) { bloq = true; break; }
+                if (n.PorToken.TryGetValue(t, out var lista) && lista.Any(r => Coincide(r, lurl, host, hostPag, terceros, tipo))) { bloq = true; break; }
             }
-        if (!bloq) bloq = n.SinToken.Any(r => Coincide(r, lurl, host, hostPag, terceros));
+        if (!bloq) bloq = n.SinToken.Any(r => Coincide(r, lurl, host, hostPag, terceros, tipo));
         if (!bloq) return false;
         // excepciones (@@)
         foreach (var h in CadenaHost(host)) if (n.Permitidos.Contains(h)) return false;
         foreach (var t in Tokens(lurl))
-            if (n.PermisosPorToken.TryGetValue(t, out var lista) && lista.Any(r => Coincide(r, lurl, host, hostPag, terceros))) return false;
+            if (n.PermisosPorToken.TryGetValue(t, out var lista) && lista.Any(r => Coincide(r, lurl, host, hostPag, terceros, tipo))) return false;
         return true;
+    }
+    /// <summary>Para depurar: la regla que bloquearía la petición.</summary>
+    public string? Explicar(string url, string pagina, string tipo = "other")
+    {
+        var n = c; var lurl = url.ToLowerInvariant(); var u = new Uri(url); var host = u.Host.ToLowerInvariant();
+        var hostPag = new Uri(pagina).Host.ToLowerInvariant(); var terceros = Base(host) != Base(hostPag);
+        foreach (var h in CadenaHost(host)) { if (n.Hosts.Contains(h)) return "host " + h; if (terceros && n.HostsTerceros.Contains(h)) return "host3p " + h; }
+        foreach (var t in Tokens(lurl)) if (n.PorToken.TryGetValue(t, out var l)) { var r = l.FirstOrDefault(r => Coincide(r, lurl, host, hostPag, terceros, tipo)); if (r != null) return r.Texto; }
+        return n.SinToken.FirstOrDefault(r => Coincide(r, lurl, host, hostPag, terceros, tipo))?.Texto;
     }
     public bool SitioPermitido(string host) => host.Length > 0 && CadenaHost(host).Any(SitiosPermitidos.Contains);
 
@@ -281,8 +306,9 @@ public class Bloqueador
         return string.Join('.', p.Skip(p.Length - (compuesto ? 3 : 2)));
     }
 
-    static bool Coincide(Regla r, string url, string host, string hostPag, bool terceros)
+    static bool Coincide(Regla r, string url, string host, string hostPag, bool terceros, string tipo)
     {
+        if (r.Tipos != null && !r.Tipos.Contains(tipo) || r.NoTipos != null && r.NoTipos.Contains(tipo)) return false;
         if (r.SoloTerceros && !terceros || r.SoloPropios && terceros) return false;
         if (r.Dominios != null && !r.Dominios.Any(d => DominioDe(hostPag, d))) return false;
         if (r.NoDominios != null && r.NoDominios.Any(d => DominioDe(hostPag, d))) return false;
