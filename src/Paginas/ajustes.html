@@ -6,10 +6,12 @@
 <div class="tarjeta">
   <div class="opcion"><div><b>Buscador</b><div class="dim">Se usa al escribir en la barra de direcciones</div></div><select id="buscador"></select></div>
   <div class="opcion"><div><b>Al abrir, restaurar las pestañas de la última vez</b></div><input type="checkbox" class="interruptor" id="restaurarPestanas"></div>
+  <div class="opcion"><div><b>Navegador predeterminado</b><div class="dim">Abre la configuración de Windows para elegir MojarraNav</div></div><button class="btn" id="predeterminado">Establecer</button></div>
   <div class="opcion"><div><b>Mostrar el panel de Claude</b><div class="dim">También con Ctrl+Shift+L</div></div><input type="checkbox" class="interruptor" id="panelClaude"></div>
 </div>
 <h2>Privacidad</h2>
 <div class="tarjeta">
+  <div class="opcion"><div><b>Bloquear anuncios y rastreadores</b><div class="dim" id="bloqEstado">Listas de EasyList, EasyPrivacy, uBlock Origin y Peter Lowe. Se puede desactivar por sitio con el escudo de la barra.</div></div><input type="checkbox" class="interruptor" id="bloqueador"></div>
   <div class="opcion"><div><b>Borrar historial de navegación</b></div><button class="btn peligro" data-borrar="historial">Borrar</button></div>
   <div class="opcion"><div><b>Borrar cookies y datos de sitios</b><div class="dim">Cerrarás sesión en la mayoría de los sitios</div></div><button class="btn peligro" data-borrar="cookies">Borrar</button></div>
   <div class="opcion"><div><b>Vaciar la caché</b><div class="dim">Imágenes y archivos guardados para cargar más rápido</div></div><button class="btn" data-borrar="cache">Vaciar</button></div>

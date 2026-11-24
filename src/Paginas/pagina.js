@@ -1,5 +1,12 @@
-// Utilidades comunes de las páginas internas (moja://…). window.nav solo existe aquí.
+// Utilidades comunes de las páginas internas (moja://…).
+// Hablan con la ventana del navegador por chrome.webview; el navegador solo responde a páginas moja://.
 const $ = (s) => document.querySelector(s);
+const _pedidos = new Map(); let _sig = 1;
+window.chrome.webview.addEventListener('message', (e) => {
+  const m = e.data, p = m && _pedidos.get(m.id); if (!p) return;
+  _pedidos.delete(m.id); m.error ? p.reject(new Error(m.error)) : p.resolve(m.resultado);
+});
+window.nav = { pedir: (accion, ...args) => new Promise((resolve, reject) => { const id = _sig++; _pedidos.set(id, { resolve, reject }); window.chrome.webview.postMessage({ id, accion, args }); }) };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const pedir = (...a) => window.nav.pedir(...a);
 const I = (n, s = 16) => window.icon(n, s);
